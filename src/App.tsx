@@ -144,6 +144,13 @@ const App: React.FC = () => {
     }
   };
 
+  // Função para interromper a gravação ao clicar no vídeo
+  const handleVideoClick = () => {
+    if (isRecording) {
+      toggleRecording(); // Interrompe a gravação
+    }
+  };
+
   return (
     <div className="app-container">
       {/* Container para unificar os blocos de vídeo */}
@@ -158,6 +165,7 @@ const App: React.FC = () => {
             display: isRecording || isScrolling ? 'block' : 'none', // Exibir apenas durante gravação/rolagem
             zIndex: isRecording || isScrolling ? 1 : 0, // Colocar o vídeo de gravação em destaque
           }}
+          onClick={handleVideoClick} // Interrompe a gravação ao clicar no vídeo
         />
         
         {/* Vídeo gravado */}
