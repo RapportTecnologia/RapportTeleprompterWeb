@@ -3,10 +3,11 @@ import './App.css';
 
 const App: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false); // Controlar a rolagem tanto para teste quanto para gravação
   const [videoUrl, setVideoUrl] = useState('');
   const [text, setText] = useState('Insira seu texto aqui...');
   const [fontSize, setFontSize] = useState(20);
-  const [scrollSpeed, setScrollSpeed] = useState(0.40); // Velocidade reduzida pela metade
+  const [scrollSpeed, setScrollSpeed] = useState(0.4); // Ajuste da velocidade para 0.40
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -80,13 +81,16 @@ const App: React.FC = () => {
   useEffect(() => {
     let scrollInterval: NodeJS.Timeout;
 
-    if (isRecording && textRef.current) {
-      const totalScrollHeight = textRef.current.scrollHeight;
-      const visibleHeight = textRef.current.clientHeight;
+    // Se estiver gravando ou testando a rolagem
+    if (isScrolling || isRecording) {
+      const totalScrollHeight = textRef.current?.scrollHeight ?? 0;
+      const visibleHeight = textRef.current?.clientHeight ?? 0;
 
       setScrollPosition(0); // Resetar a rolagem
 
-      // Pausa de 3.7 segundos antes de começar a rolar
+      // Adicionando atraso de 3.7 segundos tanto para gravação quanto para teste
+      const delay = 3700;
+
       setTimeout(() => {
         scrollInterval = setInterval(() => {
           setScrollPosition((prev) => {
@@ -101,20 +105,28 @@ const App: React.FC = () => {
             return newPosition;
           });
         }, 50); // Intervalo para suavizar a rolagem
-      }, 3700); // Pausa de 3.7 segundos antes de iniciar a rolagem
+      }, delay); // 3.7 segundos para gravação e teste de rolagem
     }
 
     return () => clearInterval(scrollInterval);
-  }, [isRecording, scrollSpeed]);
+  }, [isScrolling, isRecording, scrollSpeed]);
 
-  const handleStartRecording = () => {
-    setIsRecording(true);
-    setTimeElapsed(0); // Reiniciar o contador de gravação
+  // Função de iniciar/parar gravação com um único botão push-pull
+  const toggleRecording = () => {
+    if (isRecording) {
+      // Parar gravação
+      setIsRecording(false);
+      setIsNearLimit(false); // Parar animação de bordas piscando
+    } else {
+      // Iniciar gravação
+      setIsRecording(true);
+      setTimeElapsed(0); // Reiniciar o contador de gravação
+    }
   };
 
-  const handleStopRecording = () => {
-    setIsRecording(false);
-    setIsNearLimit(false); // Parar a animação de bordas piscando
+  // Função para iniciar/parar rolagem para teste
+  const toggleScrolling = () => {
+    setIsScrolling(!isScrolling);
   };
 
   return (
@@ -153,11 +165,14 @@ const App: React.FC = () => {
       </div>
 
       <div style={{ marginTop: '20px' }}>
-        <button onClick={handleStartRecording} disabled={isRecording}>
-          Iniciar Gravação
+        {/* Botão push-pull que alterna entre Iniciar e Parar gravação */}
+        <button onClick={toggleRecording}>
+          {isRecording ? 'Parar Gravação' : 'Iniciar Gravação'}
         </button>
-        <button onClick={handleStopRecording} disabled={!isRecording}>
-          Parar Gravação
+
+        {/* Novo botão para testar a rolagem */}
+        <button onClick={toggleScrolling} style={{ marginLeft: '10px' }}>
+          {isScrolling ? 'Parar Rolagem' : 'Testar Rolagem'}
         </button>
 
         {videoUrl && (
