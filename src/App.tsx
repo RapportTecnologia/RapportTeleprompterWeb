@@ -4,6 +4,7 @@ import './App.css';
 const App: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false); // Controlar a rolagem tanto para teste quanto para gravação
+  const [isEditing, setIsEditing] = useState(true); // Controla se está no modo de edição ou rolagem
   const [videoUrl, setVideoUrl] = useState('');
   const [text, setText] = useState('Insira seu texto aqui...');
   const [fontSize, setFontSize] = useState(20);
@@ -82,7 +83,7 @@ const App: React.FC = () => {
     let scrollInterval: NodeJS.Timeout;
 
     // Se estiver gravando ou testando a rolagem
-    if (isScrolling || isRecording) {
+    if ((isScrolling || isRecording) && !isEditing) {
       const totalScrollHeight = textRef.current?.scrollHeight ?? 0;
       const visibleHeight = textRef.current?.clientHeight ?? 0;
 
@@ -109,7 +110,7 @@ const App: React.FC = () => {
     }
 
     return () => clearInterval(scrollInterval);
-  }, [isScrolling, isRecording, scrollSpeed]);
+  }, [isScrolling, isRecording, scrollSpeed, isEditing]);
 
   // Função de iniciar/parar gravação com um único botão push-pull
   const toggleRecording = () => {
@@ -117,16 +118,24 @@ const App: React.FC = () => {
       // Parar gravação
       setIsRecording(false);
       setIsNearLimit(false); // Parar animação de bordas piscando
+      setIsEditing(true); // Retornar ao modo de edição após parar a gravação
     } else {
       // Iniciar gravação
       setIsRecording(true);
+      setIsEditing(false); // Sair do modo de edição quando começar a gravação
       setTimeElapsed(0); // Reiniciar o contador de gravação
     }
   };
 
   // Função para iniciar/parar rolagem para teste
   const toggleScrolling = () => {
-    setIsScrolling(!isScrolling);
+    if (isScrolling) {
+      setIsScrolling(false);
+      setIsEditing(true); // Voltar ao modo de edição ao parar o teste de rolagem
+    } else {
+      setIsScrolling(true);
+      setIsEditing(false); // Sair do modo de edição ao iniciar o teste de rolagem
+    }
   };
 
   return (
@@ -145,16 +154,48 @@ const App: React.FC = () => {
           <h3>Tempo de Gravação: {timeElapsed}s</h3>
         </div>
 
-        {/* Contêiner do texto do teleprompter */}
-        <div className="teleprompter-container" ref={textRef} style={{ fontSize: `${fontSize}px` }}>
-          <div
-            className="teleprompter-text"
-            style={{ transform: `translateY(${scrollPosition}px)` }} // Aplicar a transformação para rolagem
-          >
-            {text.split('\n').map((line, index) => (
-              <p key={index} style={{ margin: 0 }}>{line}</p>
-            ))}
-          </div>
+        {/* Condicional: exibe o textarea para edição ou o texto rolando */}
+        <div className="text-overlay">
+          {isEditing ? (
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={3}
+              style={{
+                width: '100%',
+                fontSize: `${fontSize}px`,
+                backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fundo transparente similar ao modo de rolagem
+                color: '#fff', // Cor do texto para contraste
+                border: 'none',
+                padding: '10px',
+                marginTop: '10px',
+                resize: 'none',
+                position: 'absolute', // Para colocar sobre a área do teleprompter
+                top: '10%', // Ajuste a posição conforme necessário
+                left: '5%',
+                right: '5%',
+                zIndex: 2
+              }}
+            />
+          ) : (
+            <div className="teleprompter-container" ref={textRef} style={{ fontSize: `${fontSize}px`, zIndex: 1 }}>
+              <div
+                className="teleprompter-text"
+                style={{
+                  transform: `translateY(${scrollPosition}px)`,
+                  textAlign: 'left', // Alinhado à esquerda para facilitar a leitura
+                  whiteSpace: 'normal', // Não permitir quebras de palavras no meio
+                  wordWrap: 'break-word', // Permitir que palavras longas sejam quebradas corretamente
+                  overflowWrap: 'break-word' // Garantir que o texto se ajuste ao layout
+                }} // Aplicar a transformação para rolagem
+              >
+                {/* Exibe o texto completo sem limite de linhas */}
+                {text.split('\n').map((line, index) => (
+                  <p key={index} style={{ margin: 0 }}>{line}</p>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {timeElapsed >= 60 && (
@@ -184,15 +225,6 @@ const App: React.FC = () => {
       </div>
 
       <div style={{ marginTop: '20px' }}>
-        <label>
-          Texto:
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={3}
-            style={{ width: '100%', maxWidth: '480px' }}
-          />
-        </label>
         <label>
           Tamanho da Fonte:
           <input
