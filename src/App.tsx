@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [isNearLimit, setIsNearLimit] = useState(false); // Borda piscando ao se aproximar do limite de tempo
   const [scrollPosition, setScrollPosition] = useState(0); // Posição da rolagem
+  const [timeLimit, setTimeLimit] = useState(60); // Limite de tempo de gravação, padrão 60 segundos
   const videoRef = useRef<HTMLVideoElement>(null);
   const recordedVideoRef = useRef<HTMLVideoElement>(null); // Referência para o vídeo gravado
   const textRef = useRef<HTMLDivElement>(null); // Referência para o contêiner do texto
@@ -65,11 +66,22 @@ const App: React.FC = () => {
     if (isRecording) {
       intervalRef.current = setInterval(() => {
         setTimeElapsed((prevTime) => {
-          if (prevTime >= 55) {
-            setIsNearLimit(true); // Ativar animação de bordas piscando
+          // Se o tempo limite for diferente de 0 (ilimitado)
+          if (timeLimit !== 0) {
+            // Ativar bordas piscando quando faltarem 5 segundos
+            if (prevTime >= timeLimit - 5) {
+              setIsNearLimit(true);
+            }
+
+            // Se o tempo limite for atingido
+            if (prevTime >= timeLimit) {
+              clearInterval(intervalRef.current!);
+              return prevTime; // Parar de incrementar o tempo
+            }
           } else {
-            setIsNearLimit(false);
+            setIsNearLimit(false); // Não piscar se for ilimitado
           }
+
           return prevTime + 1;
         });
       }, 1000);
@@ -77,7 +89,7 @@ const App: React.FC = () => {
       clearInterval(intervalRef.current!);
     }
     return () => clearInterval(intervalRef.current!);
-  }, [isRecording]);
+  }, [isRecording, timeLimit]);
 
   // Função para controlar a rolagem do texto
   useEffect(() => {
@@ -158,7 +170,7 @@ const App: React.FC = () => {
         {/* Vídeo durante a gravação */}
         <video
           ref={videoRef}
-          className={`video-element ${isRecording || isScrolling ? 'highlight-video' : ''}`}
+          className={`video-element ${isRecording || isScrolling ? (isNearLimit ? 'blink-border' : 'highlight-video') : ''}`}
           autoPlay
           muted
           style={{
@@ -230,9 +242,10 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {timeElapsed >= 60 && (
+        {/* Exibe mensagem de limite de tempo atingido, se o tempo limite não for ilimitado */}
+        {timeLimit !== 0 && timeElapsed >= timeLimit && (
           <div className="time-limit-warning">
-            <p>O tempo máximo de gravação de 60 segundos foi atingido!</p>
+            <p>O tempo máximo de gravação de {timeLimit} segundos foi atingido!</p>
           </div>
         )}
       </div>
@@ -264,7 +277,20 @@ const App: React.FC = () => {
             onChange={(e) => setFontSize(parseInt(e.target.value, 10))}
           />
         </label>
-        <label>
+
+        {/* Campo para selecionar o limite de tempo da gravação */}
+        <label style={{ marginLeft: '20px' }}>
+          Limite de Tempo (segundos, 0 para ilimitado):
+          <input
+            type="number"
+            min="0"
+            value={timeLimit}
+            onChange={(e) => setTimeLimit(parseInt(e.target.value, 10))}
+            style={{ marginLeft: '10px', width: '80px' }}
+          />
+        </label>
+
+        <label style={{ marginLeft: '20px' }}>
           Velocidade do Rolamento:
           <input
             type="range"
