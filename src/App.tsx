@@ -5,8 +5,8 @@ const App: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
   const [text, setText] = useState('Insira seu texto aqui...');
-  const [fontSize, setFontSize] = useState(30);
-  const [scrollSpeed, setScrollSpeed] = useState(5); // Ajustável para controlar a velocidade de rolagem
+  const [fontSize, setFontSize] = useState(20); // Diminuído para 2/3 do tamanho anterior
+  const [scrollSpeed, setScrollSpeed] = useState(2.5); // Reduzido pela metade para diminuir a velocidade de rolagem
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0); // Contador de tempo
