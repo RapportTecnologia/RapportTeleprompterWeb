@@ -43,16 +43,13 @@
   background-color: rgba(0, 0, 0, 0.5);
   padding: 10px;
   height: 6em;
-  overflow-y: hidden;
-  white-space: pre-wrap;
-  word-wrap: break-word;
+  overflow: hidden;
   line-height: 1.5em;
   z-index: 10;
 }
 
 .teleprompter-text {
-  max-height: 6em;
-  overflow-y: hidden;
+  transition: transform 0.1s linear;
 }
 
 .time-limit-warning {

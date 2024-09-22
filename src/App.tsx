@@ -11,8 +11,9 @@ const App: React.FC = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0); // Contador de tempo
   const [isNearLimit, setIsNearLimit] = useState(false); // Para piscar as bordas
+  const [scrollPosition, setScrollPosition] = useState(0); // Controlar a posição de rolagem do texto
   const videoRef = useRef<HTMLVideoElement>(null);
-  const textContainerRef = useRef<HTMLDivElement>(null); // Referência para o contêiner do texto
+  const textRef = useRef<HTMLDivElement>(null); // Referência para o texto
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Referência para o intervalo de rolagem
 
   useEffect(() => {
@@ -56,17 +57,16 @@ const App: React.FC = () => {
 
   // Função para iniciar a rolagem do texto
   useEffect(() => {
-    let scrollInterval: NodeJS.Timeout = null!; // Exatamente como solicitado
+    let scrollInterval: NodeJS.Timeout = null!; // Controlar a rolagem
 
-    if (textContainerRef.current) {
-      const textContainer = textContainerRef.current;
-      textContainer.scrollTop = 0; // Garantir que a rolagem comece do topo
+    if (textRef.current) {
+      setScrollPosition(0); // Reiniciar a posição de rolagem
 
       if (isRecording) {
         scrollInterval = setInterval(() => {
-          textContainer.scrollTop += scrollSpeed; // Ajusta a rolagem verticalmente conforme a velocidade
-        }, 100); // Intervalo de rolagem
-      } else if (scrollInterval) {
+          setScrollPosition((prev) => prev - scrollSpeed); // Ajusta a posição de rolagem
+        }, 100);
+      } else {
         clearInterval(scrollInterval);
       }
     }
@@ -78,34 +78,11 @@ const App: React.FC = () => {
     setIsRecording(true);
     setTimeElapsed(0); // Reiniciar o tempo ao iniciar a gravação
   };
+
   const handleStopRecording = () => {
     setIsRecording(false);
     setIsNearLimit(false); // Parar a animação de piscar as bordas ao parar a gravação
   };
-
-  // Função para ajustar o texto para não quebrar palavras e limitar a 4 linhas
-  const getAdjustedText = (text: string, maxWidth: number) => {
-    const words = text.split(' ');
-    let result = '';
-    let currentLine = '';
-
-    words.forEach((word) => {
-      const potentialLine = currentLine ? `${currentLine} ${word}` : word;
-      if (potentialLine.length <= maxWidth) {
-        currentLine = potentialLine;
-      } else {
-        result += currentLine + '\n';
-        currentLine = word;
-      }
-    });
-
-    result += currentLine;
-    const lines = result.split('\n');
-    return lines.slice(0, 4).join('\n'); // Limitar a 4 linhas
-  };
-
-  // Limitar o texto a 90% da largura da tela ou 40 caracteres por linha
-  const adjustedText = getAdjustedText(text, 40);
 
   return (
     <div className="app-container">
@@ -122,13 +99,13 @@ const App: React.FC = () => {
           <h3>Tempo de Gravação: {timeElapsed}s</h3>
         </div>
         {/* Contêiner do texto do teleprompter */}
-        <div
-          ref={textContainerRef}
-          className="teleprompter-container"
-          style={{ fontSize: `${fontSize}px` }}
-        >
-          <div className="teleprompter-text">
-            {adjustedText}
+        <div className="teleprompter-container" style={{ fontSize: `${fontSize}px` }}>
+          <div
+            ref={textRef}
+            className="teleprompter-text"
+            style={{ transform: `translateY(${scrollPosition}px)` }} // Aplicar transformação CSS para rolar o texto
+          >
+            {text}
           </div>
         </div>
         {/* Alerta do tempo limite atingido */}
