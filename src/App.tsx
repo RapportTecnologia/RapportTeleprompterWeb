@@ -18,18 +18,30 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (isRecording && videoRef.current) {
-      navigator.mediaDevices.getUserMedia({ video: { aspectRatio: 9 / 16 } }) // Garantir proporção 9:16
+      navigator.mediaDevices.getUserMedia({ video: { aspectRatio: 9 / 16 }, audio: true }) 
         .then(stream => {
           videoRef.current!.srcObject = stream;
           setStream(stream);
-          const recorder = new MediaRecorder(stream);
+
+          // Usar MediaRecorder para gravar em WebM
+          const options = { mimeType: 'video/webm; codecs=vp9,opus' };
+          const recorder = new MediaRecorder(stream, options);
+          const chunks: Blob[] = [];
+
           recorder.ondataavailable = (e) => {
-            setVideoUrl(URL.createObjectURL(e.data));
+            chunks.push(e.data);
           };
+
+          recorder.onstop = () => {
+            const completeBlob = new Blob(chunks, { type: 'video/webm' });
+            const webmUrl = URL.createObjectURL(completeBlob);
+            setVideoUrl(webmUrl); // Mostrar o WebM na tela
+          };
+
           recorder.start();
           setMediaRecorder(recorder);
         })
-        .catch(err => console.error('Erro ao acessar webcam:', err));
+        .catch(err => console.error('Erro ao acessar webcam e microfone:', err));
     } else if (mediaRecorder && stream) {
       mediaRecorder.stop();
       stream.getTracks().forEach(track => track.stop());
@@ -127,7 +139,7 @@ const App: React.FC = () => {
         {videoUrl && (
           <div>
             <video src={videoUrl} controls style={{ marginTop: '20px', width: '100%', maxWidth: '480px' }} />
-            <a href={videoUrl} download="video.mp4">Baixar Vídeo</a>
+            <a href={videoUrl} download="video.webm">Baixar Vídeo WebM</a>
           </div>
         )}
       </div>
