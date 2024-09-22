@@ -15,6 +15,7 @@ const App: React.FC = () => {
   const [isNearLimit, setIsNearLimit] = useState(false); // Borda piscando ao se aproximar do limite de tempo
   const [scrollPosition, setScrollPosition] = useState(0); // Posição da rolagem
   const videoRef = useRef<HTMLVideoElement>(null);
+  const recordedVideoRef = useRef<HTMLVideoElement>(null); // Referência para o vídeo gravado
   const textRef = useRef<HTMLDivElement>(null); // Referência para o contêiner do texto
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Intervalo para a rolagem
 
@@ -114,6 +115,11 @@ const App: React.FC = () => {
 
   // Função de iniciar/parar gravação com um único botão push-pull
   const toggleRecording = () => {
+    // Verificar se o vídeo gravado está tocando, e pausar se necessário
+    if (recordedVideoRef.current && !isRecording) {
+      recordedVideoRef.current.pause(); // Pausar o vídeo gravado
+    }
+
     if (isRecording) {
       // Parar gravação
       setIsRecording(false);
@@ -140,16 +146,34 @@ const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      <div
-        className="video-wrapper"
-        onWheel={handleWheel} // Controlar a velocidade de rolagem com a roda do mouse
-      >
+      {/* Container para unificar os blocos de vídeo */}
+      <div className="video-wrapper">
+        {/* Vídeo durante a gravação */}
         <video
           ref={videoRef}
-          className={`video-element ${isNearLimit ? 'blink-border' : ''}`}
+          className={`video-element ${isRecording || isScrolling ? 'highlight-video' : ''}`}
           autoPlay
           muted
+          style={{
+            display: isRecording || isScrolling ? 'block' : 'none', // Exibir apenas durante gravação/rolagem
+            zIndex: isRecording || isScrolling ? 1 : 0, // Colocar o vídeo de gravação em destaque
+          }}
         />
+        
+        {/* Vídeo gravado */}
+        {videoUrl && (
+          <video
+            ref={recordedVideoRef}
+            className={`video-element ${!isRecording && !isScrolling ? 'highlight-video' : ''}`}
+            src={videoUrl}
+            controls
+            style={{
+              display: !isRecording && !isScrolling ? 'block' : 'none', // Exibir apenas quando não estiver gravando
+              zIndex: !isRecording && !isScrolling ? 1 : 0, // Colocar o vídeo gravado em destaque
+            }}
+          />
+        )}
+
         <div className="time-counter">
           <h3>Tempo de Gravação: {timeElapsed}s</h3>
         </div>
@@ -189,7 +213,7 @@ const App: React.FC = () => {
                   overflowWrap: 'break-word' // Garantir que o texto se ajuste ao layout
                 }} // Aplicar a transformação para rolagem
               >
-                {/* Exibe o texto completo sem limite de linhas */}
+                {/* Exibe o texto completo */}
                 {text.split('\n').map((line, index) => (
                   <p key={index} style={{ margin: 0 }}>{line}</p>
                 ))}
@@ -217,10 +241,7 @@ const App: React.FC = () => {
         </button>
 
         {videoUrl && (
-          <div>
-            <video src={videoUrl} controls style={{ marginTop: '20px', width: '100%', maxWidth: '480px' }} />
-            <a href={videoUrl} download="video.webm">Baixar Vídeo WebM</a>
-          </div>
+          <a href={videoUrl} download="video.webm">Baixar Vídeo WebM</a>
         )}
       </div>
 
