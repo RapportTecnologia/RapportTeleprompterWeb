@@ -7,11 +7,14 @@ No momento ele é bem básico, só grava o video, ainda está com os seguintes p
 - -Não grava o audio- Resolvido
 - -Não rola o texto- Resolvido
 - Organização dos componentes na tela precisa melhorar.
+## Para testar o projeto
+
+viste [este link](https://rapport.tec.br/projetos/teleprompter-web/) para ver o Rapport Teleprompt Funcionando.
 
 ## Como colaborar.
 Para colaborar basta fazer um pullrequest com suas melhorias, seria bom abrir um Issue citando que fará a melhoria, e citar no pullrequest que se refere ao issue criado.
 
-## Como executar o projeto
+## Como clonar o projeto
 
 Faça o clone do projeto:
 
