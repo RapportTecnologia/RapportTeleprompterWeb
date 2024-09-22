@@ -4,8 +4,8 @@ Depois de pesquisar vários teleprompters e não ficar satisfeito com as versõe
 
 No momento ele é bem básico, só grava o video, ainda está com os seguintes problemas:
 
-- Não grava o audio
-- Não rola o texto
+- -Não grava o audio- Resolvido
+- -Não rola o texto- Resolvido
 - Organização dos componentes na tela precisa melhorar.
 
 ## Como colaborar.
