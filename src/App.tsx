@@ -8,7 +8,7 @@ const App: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [text, setText] = useState('Insira seu texto aqui...');
   const [fontSize, setFontSize] = useState(20);
-  const [scrollSpeed, setScrollSpeed] = useState(0.4); // Ajuste da velocidade para 0.40
+  const [scrollSpeed, setScrollSpeed] = useState(4); // Ajuste da velocidade para 0.40
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -20,6 +20,7 @@ const App: React.FC = () => {
   const textRef = useRef<HTMLDivElement>(null); // Referência para o contêiner do texto
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Intervalo para a rolagem
 
+  /*
   // Função para lidar com o evento da roda do mouse (controle de velocidade)
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
@@ -29,7 +30,7 @@ const App: React.FC = () => {
       setScrollSpeed((prev) => Math.max(prev - 0.05, 0.1)); // Diminuir a velocidade até o mínimo de 0.1
     }
   };
-
+  */
   // Função para controlar a gravação e capturar o vídeo
   useEffect(() => {
     if (isRecording && videoRef.current) {
@@ -294,8 +295,8 @@ const App: React.FC = () => {
           Velocidade do Rolamento:
           <input
             type="range"
-            min="0.1"
-            max="0.9" // Ajuste do máximo de velocidade para o novo ponto central
+            min="1"
+            max="9" // Ajuste do máximo de velocidade para o novo ponto central
             value={scrollSpeed}
             onChange={(e) => setScrollSpeed(parseFloat(e.target.value))}
           />
