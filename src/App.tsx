@@ -8,7 +8,7 @@ const App: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [text, setText] = useState('Insira seu texto aqui...');
   const [fontSize, setFontSize] = useState(20);
-  const [scrollSpeed, setScrollSpeed] = useState(4); // Ajuste da velocidade para 0.40
+  const [scrollSpeed, setScrollSpeed] = useState(1); // Ponto central: 10 caracteres/seg (slider 1-9, centro=5)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -19,6 +19,9 @@ const App: React.FC = () => {
   const recordedVideoRef = useRef<HTMLVideoElement>(null); // Referência para o vídeo gravado
   const textRef = useRef<HTMLDivElement>(null); // Referência para o contêiner do texto
   const intervalRef = useRef<NodeJS.Timeout | null>(null); // Intervalo para a rolagem
+  const scrollSpeedRef = useRef(scrollSpeed); // Referência para velocidade de rolagem atual
+  const rafIdRef = useRef<number | null>(null); // requestAnimationFrame id
+  const lastTimeRef = useRef<number | null>(null); // Timestamp do último frame
 
   /*
   // Função para lidar com o evento da roda do mouse (controle de velocidade)
@@ -92,39 +95,77 @@ const App: React.FC = () => {
     return () => clearInterval(intervalRef.current!);
   }, [isRecording, timeLimit]);
 
-  // Função para controlar a rolagem do texto
+  // Função para controlar a rolagem do texto (usando requestAnimationFrame)
   useEffect(() => {
-    let scrollInterval: NodeJS.Timeout;
+    // Cancelar qualquer animação anterior
+    if (rafIdRef.current !== null) {
+      cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    }
+    lastTimeRef.current = null;
 
     // Se estiver gravando ou testando a rolagem
     if ((isScrolling || isRecording) && !isEditing) {
       const totalScrollHeight = textRef.current?.scrollHeight ?? 0;
       const visibleHeight = textRef.current?.clientHeight ?? 0;
 
-      setScrollPosition(0); // Resetar a rolagem
+      setScrollPosition(0); // Resetar a rolagem somente ao iniciar
 
-      // Adicionando atraso de 3.7 segundos tanto para gravação quanto para teste
-      const delay = 3700;
+      const delay = 3700; // Atraso de 3.7s
 
-      setTimeout(() => {
-        scrollInterval = setInterval(() => {
+      const startAfterDelay = () => {
+        const speedPxPerUnitPerSec = 20; // fator de pixels/segundo por unidade do slider
+        const stopPosition = -(totalScrollHeight - visibleHeight);
+
+        const tick = (t: number) => {
+          if (lastTimeRef.current == null) {
+            lastTimeRef.current = t;
+          }
+          const dt = (t - lastTimeRef.current) / 1000; // segundos
+          lastTimeRef.current = t;
+
+          const delta = scrollSpeedRef.current * speedPxPerUnitPerSec * dt;
+          let reachedEnd = false;
+
           setScrollPosition((prev) => {
-            const newPosition = prev - scrollSpeed; // Atualizar a posição de rolagem
-            const stopPosition = -(totalScrollHeight - visibleHeight); // Calcular o limite de rolagem
-
-            if (newPosition <= stopPosition) {
-              clearInterval(scrollInterval); // Parar a rolagem ao atingir o limite
+            const next = prev - delta;
+            if (next <= stopPosition) {
+              reachedEnd = true;
               return stopPosition;
             }
-
-            return newPosition;
+            return next;
           });
-        }, 50); // Intervalo para suavizar a rolagem
-      }, delay); // 3.7 segundos para gravação e teste de rolagem
+
+          if (!reachedEnd) {
+            rafIdRef.current = requestAnimationFrame(tick);
+          } else {
+            if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+            rafIdRef.current = null;
+          }
+        };
+
+        rafIdRef.current = requestAnimationFrame(tick);
+      };
+
+      const timeoutId = setTimeout(startAfterDelay, delay);
+
+      return () => {
+        clearTimeout(timeoutId);
+        if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+        rafIdRef.current = null;
+      };
     }
 
-    return () => clearInterval(scrollInterval);
-  }, [isScrolling, isRecording, scrollSpeed, isEditing]);
+    return () => {
+      if (rafIdRef.current !== null) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
+    };
+  }, [isScrolling, isRecording, isEditing]);
+
+  // Manter a velocidade de rolagem atualizada sem reiniciar o efeito
+  useEffect(() => {
+    scrollSpeedRef.current = scrollSpeed;
+  }, [scrollSpeed]);
 
   // Função de iniciar/parar gravação com um único botão push-pull
   const toggleRecording = () => {
@@ -163,6 +204,10 @@ const App: React.FC = () => {
       toggleRecording(); // Interrompe a gravação
     }
   };
+
+  // Deriva métricas de velocidade: ponto central (scrollSpeed=5) => 10 caracteres/seg
+  const charsPerSecond = Math.round((scrollSpeed / 5) * 10);
+  const wordsPerSecond = (charsPerSecond / 5); // ~5 caracteres por palavra
 
   return (
     <div className="app-container">
@@ -207,7 +252,7 @@ const App: React.FC = () => {
               onChange={(e) => setText(e.target.value)}
               rows={3}
               style={{
-                width: '100%',
+                width: '90%',
                 fontSize: `${fontSize}px`,
                 backgroundColor: 'rgba(0, 0, 0, 0.5)', // Fundo transparente similar ao modo de rolagem
                 color: '#fff', // Cor do texto para contraste
@@ -216,9 +261,9 @@ const App: React.FC = () => {
                 marginTop: '10px',
                 resize: 'none',
                 position: 'absolute', // Para colocar sobre a área do teleprompter
-                top: '10%', // Ajuste a posição conforme necessário
+                top: '60px', // Alinhar com a área do teleprompter
                 left: '5%',
-                right: '5%',
+                right: 'auto',
                 zIndex: 2
               }}
             />
@@ -295,11 +340,15 @@ const App: React.FC = () => {
           Velocidade do Rolamento:
           <input
             type="range"
-            min="1"
-            max="9" // Ajuste do máximo de velocidade para o novo ponto central
+            min="0.1" // permite ser 2x mais lento que o mínimo anterior
+            max="2" // Ajuste do máximo de velocidade para o novo ponto central
+            step="0.05"
             value={scrollSpeed}
             onChange={(e) => setScrollSpeed(parseFloat(e.target.value))}
           />
+          <span style={{ marginLeft: '10px' }}>
+            ≈ {wordsPerSecond.toFixed(1)} palavras/s • ≈ {charsPerSecond} caracteres/s
+          </span>
         </label>
       </div>
     </div>

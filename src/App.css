@@ -60,8 +60,3 @@
   z-index: 2;
 }
 
-@keyframes blink-border {
-  0% { border-color: red; }
-  50% { border-color: white; }
-  100% { border-color: red; }
-}

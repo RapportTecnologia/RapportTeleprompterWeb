@@ -2,11 +2,6 @@
 
 Depois de pesquisar vários teleprompters e não ficar satisfeito com as versões gratuitas e não poder comprar uma versão paga, até mesmo achei algums absivas no preço. Resolvi então criar meu próprio teleprompter.
 
-No momento ele é bem básico, só grava o video, ainda está com os seguintes problemas:
-
-- -Não grava o audio- Resolvido
-- -Não rola o texto- Resolvido
-- Organização dos componentes na tela precisa melhorar.
 ## Para testar o projeto
 
 viste [este link](https://rapport.tec.br/projetos/teleprompter-web/) para ver o Rapport Teleprompt Funcionando.
